@@ -29,10 +29,14 @@ change log.
 - [x] `notebooks/02_retrieval_and_ner.ipynb`
   - [x] sentence-transformers embeddings (`all-MiniLM-L6-v2`) + FAISS index over KB
   - [x] spaCy NER + regex entity extraction sanity check (order IDs, error codes)
-  - [ ] Run on Kaggle, download `kb_embeddings.npy`, `kb_index.faiss` (optional —
-        `ml/retrieval.py` currently rebuilds the index at backend startup instead)
-- [ ] Evaluate retrieval quality with a held-out set of query→expected-KB-id pairs
-      (hit-rate@k) — currently only spot-checked manually in the notebook
+  - [x] Retrieval evaluation: hit-rate@1/@3/@5 using `intents_real.csv` (notebook
+        01's held-out labeled set) as queries against the KB
+  - [x] Visualizations: overall + per-intent hit-rate bars, correct-vs-incorrect
+        score distribution, PCA scatter of KB embeddings, NER entity-type
+        coverage chart — all saved to `figures/` for the report
+  - [ ] Run on Kaggle, download `kb_embeddings.npy`, `kb_index.faiss`, `figures/`
+        (optional — `ml/retrieval.py` currently rebuilds the index at backend
+        startup instead, so these are for the report, not required for the app)
 
 ## 3. Backend (FastAPI) — local code, heavy libs run in Docker only
 - [x] `backend/main.py` — `/chat` endpoint: intent classify -> entity extract ->

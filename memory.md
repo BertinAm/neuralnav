@@ -5,6 +5,32 @@ Running log of what changed and why. Newest entries at the top. Pair with
 
 ---
 
+## 2026-06-24 (evaluation + visualizations added to notebook 02)
+
+**Extended the same "measure it, don't just demo it" treatment to retrieval/NER.**
+- `notebooks/02_retrieval_and_ner.ipynb` now loads `intents_real.csv`
+  (notebook 01's labeled 25-examples/class held-out set) as a query set and
+  computes retrieval **hit-rate@1/@3/@5**: does the top-k retrieved KB
+  entries include one with the query's true intent. Falls back to
+  evaluating on the KB's own questions (trivial ~100%) if `intents_real.csv`
+  isn't uploaded, with a printed warning so that's not mistaken for a real
+  result.
+- New visualizations, all saved to `/kaggle/working/figures/`: overall
+  hit-rate@k bar chart, per-intent hit-rate@1 bar chart (shows which intents
+  the sparse 3-entries/intent KB serves worst), correct-vs-incorrect top-1
+  score histogram (motivates a confidence threshold for retrieval fallback,
+  mirroring the classifier's `CONFIDENCE_THRESHOLD`), and a PCA scatter of
+  KB embeddings colored by intent (visualizes cluster separability).
+- NER section extended with a batch run over 200 sample queries, charting
+  entity-type counts (order IDs, error codes, spaCy NER labels) — framed
+  explicitly as a coverage/sanity check, not precision/recall, since there's
+  no ground-truth NER labeling in this dataset. Note: Bitext queries contain
+  literal `{{Order Number}}` placeholders rather than real numbers, so the
+  order-ID regex is expected to fire rarely/never on this data — that's an
+  honest limitation worth naming in the report, not a bug.
+
+---
+
 ## 2026-06-24 (low-data regime + report visualizations in notebook 01)
 
 **User ran the notebook for real** on Kaggle T4 with the actual Bitext
