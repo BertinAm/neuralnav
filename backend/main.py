@@ -24,6 +24,7 @@ from backend import db
 from ml.intent_classifier import IntentClassifier
 from ml.ner import extract_entities
 from ml.retrieval import KBRetriever
+from ml.smalltalk import RESPONSES, detect as detect_smalltalk
 
 CONFIDENCE_THRESHOLD = 0.45
 ESCALATE_INTENTS = {"escalate_human"}
@@ -86,35 +87,37 @@ def health():
 def chat(req: ChatRequest):
     session_id = req.session_id or str(uuid.uuid4())
 
-    recent_user_turns = [t.content for t in req.history if t.role == "user"][-HISTORY_CONTEXT_TURNS:]
-    context_text = " ".join(recent_user_turns + [req.message])
-
-    intent_result = _classifier.predict(context_text)
     entities = extract_entities(req.message)
+    smalltalk_category = detect_smalltalk(req.message)
 
-    intent = intent_result["intent"]
-    confidence = intent_result["confidence"]
-    escalated = False
-    reply = ""
-
-    if intent in ESCALATE_INTENTS or confidence < CONFIDENCE_THRESHOLD:
-        escalated = True
-        reply = "I'll connect you with a human agent who can help further. One moment please."
-        sources = []
-    elif intent == "greeting":
-        reply = "Hi! I'm the support assistant. What can I help you with today?"
-        sources = []
-    elif intent == "goodbye":
-        reply = "You're welcome! Reach out anytime you need help."
+    if smalltalk_category:
+        intent = f"smalltalk_{smalltalk_category}"
+        confidence = 1.0
+        escalated = False
+        reply = RESPONSES[smalltalk_category]
         sources = []
     else:
-        sources = _retriever.search(req.message, top_k=3)
-        if not sources:
-            reply = "I'm not sure yet — could you rephrase, or would you like a human agent?"
+        recent_user_turns = [t.content for t in req.history if t.role == "user"][-HISTORY_CONTEXT_TURNS:]
+        context_text = " ".join(recent_user_turns + [req.message])
+
+        intent_result = _classifier.predict(context_text)
+        intent = intent_result["intent"]
+        confidence = intent_result["confidence"]
+        escalated = False
+        reply = ""
+
+        if intent in ESCALATE_INTENTS or confidence < CONFIDENCE_THRESHOLD:
+            escalated = True
+            reply = "I'll connect you with a human agent who can help further. One moment please."
+            sources = []
         else:
-            reply = sources[0]["answer"]
-            if entities["order_ids"]:
-                reply += f" (Reference order: {entities['order_ids'][0]})"
+            sources = _retriever.search(req.message, top_k=3)
+            if not sources:
+                reply = "I'm not sure yet — could you rephrase, or would you like a human agent?"
+            else:
+                reply = sources[0]["answer"]
+                if entities["order_ids"]:
+                    reply += f" (Reference order: {entities['order_ids'][0]})"
 
     db.log_message(session_id, "user", req.message, intent=intent, confidence=confidence, escalated=escalated)
     message_id = db.log_message(session_id, "assistant", reply, intent=intent, confidence=confidence, escalated=escalated)

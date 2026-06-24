@@ -9,46 +9,68 @@ import time
 import requests
 import streamlit as st
 
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
+from avatars import ASSISTANT_AVATAR, USER_AVATAR
 
-st.set_page_config(page_title="NeuralNav Support", page_icon="🤖", layout="centered")
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
+CONFIDENCE_THRESHOLD = 0.45  # mirrors backend/main.py — shown in the UI so escalations make sense
+
+st.set_page_config(page_title="NeuralNav Support", page_icon="◆", layout="centered")
 
 CSS = """
 <style>
+:root {
+    --bg: #F5F4EF;
+    --bg-card: #FAF9F5;
+    --border: #E5E1D8;
+    --text: #2D2A26;
+    --text-muted: #78746C;
+    --accent: #D97757;
+    --accent-soft: #FBEAE2;
+}
+
 .block-container { padding-top: 2rem; max-width: 760px; }
 
 .nn-header {
-    display: flex; align-items: center; gap: 0.75rem;
-    padding: 1.1rem 1.4rem; border-radius: 16px; margin-bottom: 1.2rem;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #c026d3 100%);
-    color: white;
+    display: flex; align-items: center; gap: 0.85rem;
+    padding: 1rem 1.3rem; border-radius: 14px; margin-bottom: 1.3rem;
+    background: var(--bg-card); border: 1px solid var(--border);
 }
-.nn-header .title { font-size: 1.3rem; font-weight: 700; margin: 0; }
-.nn-header .subtitle { font-size: 0.85rem; opacity: 0.9; margin: 0; }
+.nn-header .mark {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 0.95rem; flex-shrink: 0;
+}
+.nn-header .title { font-size: 1.05rem; font-weight: 600; margin: 0; color: var(--text); }
+.nn-header .subtitle { font-size: 0.8rem; margin: 0; color: var(--text-muted); }
 .nn-header .badge {
-    margin-left: auto; font-size: 0.72rem; background: rgba(255,255,255,0.18);
-    padding: 0.25rem 0.6rem; border-radius: 999px;
+    margin-left: auto; font-size: 0.72rem; color: #1A7F4B;
+    display: flex; align-items: center; gap: 0.35rem;
 }
+.nn-header .dot { width: 7px; height: 7px; border-radius: 50%; background: #1A7F4B; }
 
-.nn-meta-row { display: flex; gap: 0.4rem; margin: 0.35rem 0 0.5rem 0; flex-wrap: wrap; }
+.nn-meta-row { display: flex; gap: 0.4rem; margin: 0.5rem 0 0.3rem 0; flex-wrap: wrap; align-items: center; }
 .nn-chip {
-    font-size: 0.72rem; padding: 0.18rem 0.6rem; border-radius: 999px;
-    font-weight: 600; border: 1px solid transparent;
+    font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 999px;
+    font-weight: 500; border: 1px solid var(--border); color: var(--text-muted);
+    background: var(--bg-card);
 }
-.nn-chip-intent { background: #eef2ff; color: #4338ca; }
-.nn-chip-conf-high { background: #ecfdf5; color: #047857; }
-.nn-chip-conf-med { background: #fffbeb; color: #b45309; }
-.nn-chip-conf-low { background: #fef2f2; color: #b91c1c; }
+.nn-chip-conf-high { color: #1A7F4B; border-color: #BEE3CE; background: #EDF8F1; }
+.nn-chip-conf-med { color: #925C13; border-color: #F2DCA8; background: #FBF3DF; }
+.nn-chip-conf-low { color: #B3261E; border-color: #F3C6C2; background: #FCEEEC; }
+
+.nn-note { font-size: 0.72rem; color: var(--text-muted); margin: 0.1rem 0 0.4rem 0; }
 
 .nn-escalate {
-    background: #fff7ed; border: 1px solid #fdba74; border-radius: 12px;
-    padding: 0.7rem 1rem; font-size: 0.9rem; color: #9a3412;
+    background: var(--accent-soft); border: 1px solid #F0C4AC; border-radius: 12px;
+    padding: 0.75rem 1rem; font-size: 0.92rem; color: #8A3F1F;
 }
 
 .nn-source {
-    font-size: 0.8rem; background: #f8fafc; border: 1px solid #e2e8f0;
-    border-radius: 10px; padding: 0.5rem 0.75rem; margin-top: 0.3rem;
+    font-size: 0.8rem; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.55rem 0.8rem; margin-top: 0.35rem; color: var(--text);
 }
+.nn-source b { color: var(--text); }
+.nn-source i { color: var(--text-muted); }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -56,12 +78,12 @@ st.markdown(CSS, unsafe_allow_html=True)
 st.markdown(
     """
     <div class="nn-header">
-        <div style="font-size:1.8rem;">🤖</div>
+        <div class="mark">N</div>
         <div>
             <p class="title">NeuralNav Support</p>
             <p class="subtitle">ML/DL-powered customer service assistant</p>
         </div>
-        <div class="badge">● online</div>
+        <div class="badge"><span class="dot"></span> Online</div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -76,7 +98,7 @@ if "messages" not in st.session_state:
 
 with st.sidebar:
     st.subheader("Session")
-    if st.button("🔄 New conversation", use_container_width=True):
+    if st.button("New conversation", use_container_width=True):
         st.session_state.session_id = None
         st.session_state.messages = [
             {"role": "assistant", "content": "Hi! How can I help you today?", "meta": None, "message_id": None}
@@ -84,6 +106,15 @@ with st.sidebar:
         st.rerun()
 
     st.caption(f"Session: `{st.session_state.session_id or 'not started'}`")
+    st.divider()
+    st.caption("**How this works**")
+    st.caption(
+        "Each message is classified into an intent (TF-IDF baseline or "
+        "fine-tuned DistilBERT), checked for entities (order IDs, error "
+        "codes), then either answered via semantic retrieval over the "
+        f"knowledge base or escalated if confidence drops below "
+        f"{int(CONFIDENCE_THRESHOLD * 100)}%."
+    )
     st.divider()
     st.caption("Backend: " + BACKEND_URL)
     try:
@@ -97,7 +128,7 @@ def confidence_chip(confidence: float) -> str:
     pct = round(confidence * 100)
     if confidence >= 0.7:
         cls = "nn-chip-conf-high"
-    elif confidence >= 0.45:
+    elif confidence >= CONFIDENCE_THRESHOLD:
         cls = "nn-chip-conf-med"
     else:
         cls = "nn-chip-conf-low"
@@ -107,13 +138,19 @@ def confidence_chip(confidence: float) -> str:
 def render_meta(meta: dict):
     if not meta:
         return
-    intent_chip = f'<span class="nn-chip nn-chip-intent">intent: {meta["intent"]}</span>'
+    intent_chip = f'<span class="nn-chip">intent: {meta["intent"]}</span>'
     st.markdown(
         f'<div class="nn-meta-row">{intent_chip}{confidence_chip(meta["confidence"])}</div>',
         unsafe_allow_html=True,
     )
+    if meta.get("escalated"):
+        st.markdown(
+            f'<p class="nn-note">Confidence was below {int(CONFIDENCE_THRESHOLD * 100)}%, '
+            f'so this was routed to a human agent instead of an automated answer.</p>',
+            unsafe_allow_html=True,
+        )
     if meta.get("sources"):
-        with st.expander(f"📚 {len(meta['sources'])} source(s) used"):
+        with st.expander(f"{len(meta['sources'])} source(s) used"):
             for s in meta["sources"]:
                 st.markdown(
                     f'<div class="nn-source"><b>{s["question"]}</b><br>{s["answer"]}'
@@ -143,11 +180,11 @@ def render_feedback(message_id, idx):
 
 
 for idx, msg in enumerate(st.session_state.messages):
-    avatar = "🧑" if msg["role"] == "user" else "🤖"
+    avatar = USER_AVATAR if msg["role"] == "user" else ASSISTANT_AVATAR
     with st.chat_message(msg["role"], avatar=avatar):
         meta = msg.get("meta")
         if meta and meta.get("escalated"):
-            st.markdown(f'<div class="nn-escalate">🔁 {msg["content"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="nn-escalate">{msg["content"]}</div>', unsafe_allow_html=True)
         else:
             st.write(msg["content"])
         render_meta(meta)
@@ -156,10 +193,10 @@ for idx, msg in enumerate(st.session_state.messages):
 
 if prompt := st.chat_input("Describe your issue..."):
     st.session_state.messages.append({"role": "user", "content": prompt, "meta": None, "message_id": None})
-    with st.chat_message("user", avatar="🧑"):
+    with st.chat_message("user", avatar=USER_AVATAR):
         st.write(prompt)
 
-    with st.chat_message("assistant", avatar="🤖"):
+    with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
         placeholder = st.empty()
         placeholder.markdown("_typing..._")
         try:
@@ -188,7 +225,7 @@ if prompt := st.chat_input("Describe your issue..."):
                 "sources": data["sources"],
             }
             if data["escalated"]:
-                st.markdown(f'<div class="nn-escalate">🔁 {data["reply"]}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="nn-escalate">{data["reply"]}</div>', unsafe_allow_html=True)
             else:
                 st.write(data["reply"])
             render_meta(meta)

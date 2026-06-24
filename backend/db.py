@@ -108,10 +108,32 @@ def get_stats() -> dict:
             cur.execute("SELECT rating, COUNT(*) c FROM feedback GROUP BY rating")
             feedback_counts = cur.fetchall()
 
+            cur.execute(
+                "SELECT intent, AVG(confidence) avg_conf, COUNT(*) c FROM messages "
+                "WHERE role='user' AND intent IS NOT NULL AND confidence IS NOT NULL "
+                "GROUP BY intent HAVING COUNT(*) >= 1 ORDER BY avg_conf ASC LIMIT 8"
+            )
+            low_confidence_intents = cur.fetchall()
+
+            cur.execute(
+                "SELECT date_trunc('hour', to_timestamp(created_at)) bucket, COUNT(*) c "
+                "FROM messages WHERE role='user' GROUP BY bucket ORDER BY bucket"
+            )
+            volume_over_time = cur.fetchall()
+
     return {
         "total_conversations": total,
         "escalation_rate": (escalated / total) if total else 0.0,
+        "escalated_count": escalated,
+        "resolved_count": total - escalated,
         "intent_distribution": {r["intent"]: r["c"] for r in intent_counts},
         "confidences": [r["confidence"] for r in confidences],
         "feedback": {r["rating"]: r["c"] for r in feedback_counts},
+        "low_confidence_intents": [
+            {"intent": r["intent"], "avg_confidence": float(r["avg_conf"]), "count": r["c"]}
+            for r in low_confidence_intents
+        ],
+        "volume_over_time": [
+            {"hour": r["bucket"].isoformat(), "count": r["c"]} for r in volume_over_time
+        ],
     }
