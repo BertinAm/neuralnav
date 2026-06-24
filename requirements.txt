@@ -1,0 +1,22 @@
+# Full dependency set — used ONLY inside Docker images (Dockerfile.backend)
+# and on Kaggle notebooks. Do NOT pip install this locally; see
+# requirements-dev.txt for the lightweight local dev set.
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+psycopg2-binary==2.9.9
+
+# ML / DL — heavy, GPU-trained on Kaggle (see notebooks/), loaded for
+# inference inside the backend's Docker container only.
+scikit-learn==1.5.2
+pandas==2.2.3
+numpy==2.1.1
+joblib==1.4.2
+torch==2.4.1
+transformers==4.45.1
+sentence-transformers==3.1.1
+faiss-cpu==1.8.0.post1
+spacy==3.7.6
+
+python-dotenv==1.0.1

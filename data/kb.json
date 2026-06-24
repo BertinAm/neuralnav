@@ -1,0 +1,62 @@
+[
+  {
+    "id": "kb_power_1",
+    "intent": "power_issue",
+    "question": "Device won't turn on",
+    "answer": "Hold the power button for 10 seconds to force a restart. If nothing happens, plug it into a wall charger (not a laptop/USB hub) for 15 minutes and try again."
+  },
+  {
+    "id": "kb_power_2",
+    "intent": "power_issue",
+    "question": "Battery drains too fast",
+    "answer": "Go to Settings > Battery and check for background apps using high power. A full battery calibration (drain to 0%, then charge uninterrupted to 100%) often resolves this."
+  },
+  {
+    "id": "kb_order_1",
+    "intent": "order_status",
+    "question": "How to track an order",
+    "answer": "You can track your order using the order ID in the 'My Orders' section of your account, or I can look it up if you share your order number."
+  },
+  {
+    "id": "kb_return_1",
+    "intent": "return_request",
+    "question": "Return policy",
+    "answer": "Items can be returned within 30 days of delivery in original condition. I can generate a prepaid return label if you give me your order ID."
+  },
+  {
+    "id": "kb_error_E101",
+    "intent": "error_code",
+    "question": "Error code E101",
+    "answer": "E101 indicates a firmware mismatch. Update to the latest firmware via Settings > System > Software Update, then restart the device."
+  },
+  {
+    "id": "kb_error_E204",
+    "intent": "error_code",
+    "question": "Error code E204",
+    "answer": "E204 means the sensor calibration failed. Remove any case/cover, place the device on a flat surface, and run Settings > Sensors > Recalibrate."
+  },
+  {
+    "id": "kb_reset_1",
+    "intent": "troubleshoot_reset",
+    "question": "How to factory reset",
+    "answer": "Go to Settings > System > Reset > Factory Reset. This erases all data, so back up first via Settings > Backup."
+  },
+  {
+    "id": "kb_connectivity_1",
+    "intent": "troubleshoot_connectivity",
+    "question": "WiFi keeps disconnecting",
+    "answer": "Forget the network in Settings > WiFi, then reconnect. If it persists, update the device firmware and your router's firmware."
+  },
+  {
+    "id": "kb_connectivity_2",
+    "intent": "troubleshoot_connectivity",
+    "question": "Bluetooth won't pair",
+    "answer": "Remove the device from your phone's Bluetooth list, restart both devices, then re-pair by holding the pairing button for 5 seconds."
+  },
+  {
+    "id": "kb_hardware_1",
+    "intent": "hardware_issue",
+    "question": "Device overheating",
+    "answer": "Stop charging and using the device for 30 minutes to cool down. Avoid covering it while charging. If overheating continues, this may require a hardware inspection."
+  }
+]

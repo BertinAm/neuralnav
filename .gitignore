@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Trained model artifacts — large, regenerated from notebooks/ on Kaggle,
+# never committed (download into models/ locally, don't push)
+models/*
+!models/.gitkeep
+*.joblib
+*.faiss
+*.npy
+
+# Database / secrets
+*.db
+.env
+.streamlit/secrets.toml
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

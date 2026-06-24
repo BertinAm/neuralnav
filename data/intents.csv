@@ -1,0 +1,31 @@
+text,intent
+my device won't turn on,power_issue
+the screen is black but the device is on,power_issue
+battery drains too fast,power_issue
+it won't charge at all,power_issue
+where is my order,order_status
+track my package please,order_status
+has my order shipped yet,order_status
+when will my order arrive,order_status
+I want to return this item,return_request
+how do I send this back,return_request
+I need a refund for my order,return_request
+can I exchange this for another model,return_request
+I'm getting error code E101,error_code
+what does error E204 mean,error_code
+the app shows error code 0x80,error_code
+my device displays an error number,error_code
+how do I reset my device,troubleshoot_reset
+can you walk me through a factory reset,troubleshoot_reset
+my wifi keeps disconnecting,troubleshoot_connectivity
+bluetooth won't pair with my device,troubleshoot_connectivity
+the device is overheating,hardware_issue
+there's a strange noise coming from the fan,hardware_issue
+hello,greeting
+hi there,greeting
+good morning,greeting
+thanks for your help,goodbye
+that's all I needed bye,goodbye
+talk to a human,escalate_human
+I want to speak to a real agent,escalate_human
+this isn't helping connect me to support,escalate_human

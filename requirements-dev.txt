@@ -1,0 +1,13 @@
+# Lightweight local dev deps only — enough to write/run backend & frontend
+# code and get IDE/lint support. Heavy ML libs (torch, transformers,
+# sentence-transformers, faiss, spacy) are NOT installed locally — they
+# only run inside the Docker image (see Dockerfile.backend) or on Kaggle
+# notebooks (see notebooks/). This keeps local disk usage minimal.
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+streamlit==1.38.0
+requests==2.32.3
+pandas==2.2.3
+python-dotenv==1.0.1
