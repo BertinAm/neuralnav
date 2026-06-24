@@ -1,0 +1,6 @@
+# Streamlit Community Cloud auto-detects a requirements.txt next to the
+# entry-point script (frontend/app.py) — this keeps its build lightweight
+# instead of picking up the backend's heavy requirements.txt at repo root.
+streamlit==1.38.0
+requests==2.32.3
+pandas==2.2.3

@@ -1,0 +1,27 @@
+# Render Blueprint — deploy via Render dashboard: New + -> Blueprint,
+# point at this repo. Creates the backend web service and a managed
+# Postgres database together. HF_TOKEN must be set manually in the Render
+# dashboard after the first deploy (kept out of this file and out of git).
+databases:
+  - name: neuralnav-db
+    plan: free
+    databaseName: neuralnav
+    user: neuralnav
+
+services:
+  - type: web
+    name: neuralnav-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: neuralnav-db
+          property: connectionString
+      - key: HF_REPO_ID
+        value: unixio/neuralnav-intent-models
+      - key: HF_TOKEN
+        sync: false

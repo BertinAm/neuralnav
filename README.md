@@ -122,6 +122,43 @@ Streamlit Community Cloud (frontend) — both free, both deploy from the same
 GitHub repo, and the split mirrors a real microservice architecture for
 your report's deployment section.
 
+### Deploying: Render (backend + Postgres)
+
+1. Push this repo to GitHub (already done).
+2. In the [Render dashboard](https://dashboard.render.com): **New +** ->
+   **Blueprint**, connect this GitHub repo. Render reads `render.yaml` at
+   the repo root and creates both the `neuralnav-backend` web service and
+   the `neuralnav-db` Postgres database automatically.
+3. After the first deploy, open the `neuralnav-backend` service ->
+   **Environment** and add `HF_TOKEN` manually (kept out of `render.yaml`
+   and out of git on purpose — paste the same token you use in your local
+   `.env`/Kaggle secret).
+4. Wait for the deploy to finish, then copy the service's public URL
+   (`https://neuralnav-backend-xxxx.onrender.com`) — you'll need it for the
+   frontend. Confirm it's alive: `curl https://<that-url>/health`.
+
+Free tier note: the service sleeps after 15 min idle and takes ~30-60s to
+wake on the next request — expected, not a bug, if a professor's first
+request is slow.
+
+### Deploying: Streamlit Community Cloud (frontend)
+
+1. Go to [share.streamlit.io](https://share.streamlit.io), sign in with
+   GitHub, **New app**, pick this repo/branch.
+2. Set **Main file path** to `frontend/app.py`. Streamlit Cloud
+   auto-detects `frontend/requirements.txt` (lightweight — streamlit,
+   requests, pandas) since it sits next to the entry-point script, so it
+   won't try to install the heavy backend dependencies.
+3. Under **Advanced settings -> Secrets**, add:
+   ```
+   BACKEND_URL = "https://neuralnav-backend-xxxx.onrender.com"
+   ```
+   (the Render URL from the step above). `frontend/app.py` reads this via
+   `os.environ.get("BACKEND_URL", ...)` — Streamlit Cloud injects secrets
+   as env vars automatically.
+4. Deploy. Visit the generated `*.streamlit.app` URL and confirm the
+   sidebar shows "🟢 Backend reachable" before testing the chat.
+
 ## Evaluation artifacts for the report
 
 - `models/baseline_report.json` vs `models/bert_report.json` — accuracy/F1 per intent, classical vs DL.
