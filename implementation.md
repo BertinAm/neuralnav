@@ -45,9 +45,13 @@ change log.
 ## 3. Backend (FastAPI) — local code, heavy libs run in Docker only
 - [x] `backend/main.py` — `/chat` endpoint: intent classify -> entity extract ->
       escalate-or-retrieve -> reply
-- [x] `ml/intent_classifier.py` — loads BERT if present, else baseline
+- [x] `ml/intent_classifier.py` — loads BERT if present, else baseline,
+      pulling either from the HF Hub repo via `ml/hf_hub.py` if not local
+- [x] `ml/hf_hub.py` — shared helper: download a file/dir from the HF repo
+      that notebooks 01/02 push to, only if not already present locally
 - [x] `ml/ner.py` — regex (order IDs, error codes) + spaCy statistical NER
-- [x] `ml/retrieval.py` — FAISS semantic search over `data/kb.json`
+- [x] `ml/retrieval.py` — FAISS semantic search; prefers the real `kb.json`
+      pulled from the HF Hub repo over the `data/kb.json` dev sample
 - [x] `backend/db.py` — PostgreSQL persistence for messages + feedback
       (via `psycopg2`, configured by `DATABASE_URL`; local dev uses the
       `postgres` service in `docker-compose.yml`)

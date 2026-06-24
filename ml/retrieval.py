@@ -1,5 +1,11 @@
 """Semantic retrieval over the knowledge base using sentence-transformers
 embeddings + FAISS for nearest-neighbor search.
+
+Prefers the real kb.json pulled from the Hugging Face Hub repo that
+notebooks/01_intent_classification.ipynb pushes to (downloaded into
+models/kb.json — see ml/hf_hub.py) over the small dev-fallback sample in
+data/kb.json, so the backend automatically uses real data once it's
+available without code changes.
 """
 import json
 from pathlib import Path
@@ -8,13 +14,21 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
+from ml.hf_hub import ensure_file
+
 ROOT = Path(__file__).resolve().parent.parent
-KB_PATH = ROOT / "data" / "kb.json"
+HUB_KB_PATH = ROOT / "models" / "kb.json"
+DEV_KB_PATH = ROOT / "data" / "kb.json"
 EMBED_MODEL = "all-MiniLM-L6-v2"
 
 
+def _resolve_kb_path() -> Path:
+    return ensure_file(HUB_KB_PATH, "kb.json") or DEV_KB_PATH
+
+
 class KBRetriever:
-    def __init__(self, kb_path: Path = KB_PATH):
+    def __init__(self, kb_path: Path | None = None):
+        kb_path = kb_path or _resolve_kb_path()
         self.kb = json.loads(kb_path.read_text())
         self.model = SentenceTransformer(EMBED_MODEL)
         texts = [f"{item['question']} {item['answer']}" for item in self.kb]

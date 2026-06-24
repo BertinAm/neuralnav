@@ -5,6 +5,34 @@ Running log of what changed and why. Newest entries at the top. Pair with
 
 ---
 
+## 2026-06-24 (end-to-end HF Hub wiring — notebooks + backend)
+
+**Closed the loop the user asked for**: "push notebook 1's output so I can
+just load it from the hub in the next file it's needed" — applied
+consistently across both notebooks and the backend, not just notebook 01.
+
+- `notebooks/02_retrieval_and_ner.ipynb` now loads `kb.json` and
+  `intents_real.csv` directly from the same HF repo notebook 01 pushes to
+  (`hf_hub_download`), instead of requiring a manual Kaggle dataset
+  upload. Falls back to the Kaggle-dataset path or an inline sample if no
+  `HF_TOKEN` is configured. Added its own upload cell at the end, pushing
+  `kb_embeddings.npy`, `kb_index.faiss`, and `figures/*` to the *same*
+  repo — one repo ends up with everything from both notebooks.
+- New `ml/hf_hub.py`: shared `ensure_file`/`ensure_dir` helpers that check
+  for a local path first and only hit the HF Hub if it's missing — used by
+  both `ml/intent_classifier.py` (BERT dir / baseline joblib) and
+  `ml/retrieval.py` (kb.json, preferring a HF-fetched `models/kb.json` over
+  the small `data/kb.json` dev sample).
+  this means a fresh clone or fresh Docker build can run the backend with
+  zero manual file copying, as long as `HF_TOKEN`/`HF_REPO_ID` are set —
+  it pulls everything from the Hub automatically on first startup.
+- `docker-compose.yml` and `.env.example` gained `HF_REPO_ID`/`HF_TOKEN`
+  env vars for the backend service. `requirements.txt` gained
+  `huggingface_hub` (small, not a "heavy ML lib" in the sense the local-disk
+  restriction was about — only ever runs inside Docker/Kaggle anyway).
+
+---
+
 ## 2026-06-24 (confirmed fix + added HF Hub upload)
 
 **Confirmed the undertraining fix worked.** User re-ran notebook 01 with

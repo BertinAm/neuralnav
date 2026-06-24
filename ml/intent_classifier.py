@@ -1,13 +1,17 @@
 """Inference-time wrapper around the trained intent classifier.
 
 Defaults to the BERT model if it was trained (models/bert_intent/ exists),
-falling back to the TF-IDF baseline otherwise — lets the backend run even
-if the heavier DL training step hasn't been done yet.
+falling back to the TF-IDF baseline otherwise. If neither is present
+locally (fresh clone, fresh Docker build), pulls them from the Hugging
+Face Hub repo that notebooks/01_intent_classification.ipynb pushes to —
+see ml/hf_hub.py.
 """
 import json
 from pathlib import Path
 
 import joblib
+
+from ml.hf_hub import ensure_dir, ensure_file
 
 ROOT = Path(__file__).resolve().parent.parent
 BASELINE_PATH = ROOT / "models" / "baseline_intent.joblib"
@@ -17,13 +21,15 @@ BERT_DIR = ROOT / "models" / "bert_intent"
 class IntentClassifier:
     def __init__(self):
         self.backend = None
-        if BERT_DIR.exists():
+        if ensure_dir(BERT_DIR, "bert_intent"):
             self._load_bert()
-        elif BASELINE_PATH.exists():
+        elif ensure_file(BASELINE_PATH, "baseline_intent.joblib"):
             self._load_baseline()
         else:
             raise FileNotFoundError(
-                "No trained model found. Run ml/train_baseline.py (and optionally ml/train_bert.py) first."
+                "No trained model found locally or on the HF Hub. Run "
+                "notebooks/01_intent_classification.ipynb on Kaggle first "
+                "(and set HF_TOKEN/HF_REPO_ID to fetch automatically)."
             )
 
     def _load_baseline(self):
