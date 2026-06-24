@@ -64,8 +64,14 @@ change log.
       escalation rate, confidence list, feedback counts)
 - [ ] Swap the lightweight escalation/greeting logic for RASA dialogue
       management if the course wants a trainable dialogue policy (see §6)
-- [ ] True multi-turn dialogue state (current "memory" is context-for-
-      classification only, not a stateful dialogue manager)
+- [x] `ml/slot_filling.py` — narrow slot-filling for the one most visible
+      failure mode found in testing: the bot used to repeat the same
+      "please give me your address" question forever even after the user
+      answered it. Now tracks a per-session pending-slot (in-memory, not
+      persisted) and treats the next non-question turn as the answer.
+- [ ] General multi-turn dialogue state beyond that one slot (current
+      "memory" is otherwise context-for-classification only) — see RASA
+      option in §6 for the real fix if more slots are needed
 
 ## 4. Frontend (Streamlit)
 - [x] `frontend/app.py` — redesigned: gradient header, chat bubbles with

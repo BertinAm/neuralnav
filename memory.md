@@ -139,6 +139,45 @@ Kaggle outputs as datasets between notebook runs.
 
 ---
 
+## 2026-06-24 (fixed repeated-question bug found in live testing)
+
+**User pasted a real conversation transcript that exposed a genuine UX
+failure**: after the bot asked "please provide your current and new
+address," the user answered with both addresses, and the bot replied with
+the *exact same* "please provide your address" message again — it never
+recognized that the question had been answered. Root cause: no
+conversation/slot state existed; `history` was only used to bias the
+intent classifier, and every turn re-ran retrieval from scratch with no
+memory of what was already asked.
+
+**Fix**: `ml/slot_filling.py` — narrow, single-slot mechanism (not a
+general dialogue manager). `backend/main.py` now tracks
+`_pending_slots: dict[session_id -> slot_name]` in memory. When the
+classifier picks `change_shipping_address` as the intent, that session is
+marked as awaiting a `shipping_address` answer. The *next* turn, if it
+doesn't look like a new question, is treated as the answer: regex-parsed
+for "current address is X ... new address is Y," with a graceful fallback
+that just echoes back whatever the user said if the pattern doesn't match.
+A genuine follow-up question still correctly bypasses the pending slot and
+reclassifies normally (verified).
+
+Caught and fixed one regex bug along the way: the first version of the
+address-pair regex used a restrictive non-greedy character class
+(`[^"'.,]+?`) for the captured spans, which matched as little as one
+letter ("N" instead of "New port county") because the lazy quantifier
+combined with optional quote-matching let the engine satisfy the pattern
+on minimal input. Fixed by anchoring on the boundary phrase ("new address
+is") with an unrestricted `.+?` instead, then stripping quotes/punctuation
+in Python after extraction.
+
+**Scope note**: this is intentionally narrow — one slot, in-memory (lost
+on restart), not persisted to Postgres. If more slots are needed (order
+number collection, confirmation flows, etc.), the real fix is the RASA
+dialogue-policy option already flagged in `implementation.md` §6, not
+extending this ad-hoc dict further.
+
+---
+
 ## 2026-06-24 (low-data regime + report visualizations in notebook 01)
 
 **User ran the notebook for real** on Kaggle T4 with the actual Bitext

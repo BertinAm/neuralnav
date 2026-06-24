@@ -24,11 +24,19 @@ from backend import db
 from ml.intent_classifier import IntentClassifier
 from ml.ner import extract_entities
 from ml.retrieval import KBRetriever
+from ml.slot_filling import SLOT_PROMPTING_INTENTS, looks_like_a_question, parse_address_update
 from ml.smalltalk import RESPONSES, detect as detect_smalltalk
 
 CONFIDENCE_THRESHOLD = 0.45
 ESCALATE_INTENTS = {"escalate_human"}
 HISTORY_CONTEXT_TURNS = 2
+
+# In-memory per-session "what are we waiting for" state — e.g. after the
+# bot asks for a shipping address, the next turn should be treated as the
+# answer instead of being reclassified from scratch. Not persisted (lost on
+# restart); fine for this scope, see ml/slot_filling.py for why this exists
+# instead of a full dialogue manager.
+_pending_slots: dict[str, str] = {}
 
 app = FastAPI(title="NeuralNav Customer Service Bot")
 
@@ -83,14 +91,49 @@ def health():
     return {"status": "ok"}
 
 
+def _resolve_pending_slot(session_id: str, message: str) -> dict | None:
+    """If this session is waiting on an answer to a slot the bot already
+    asked for, and this message looks like that answer, handle it directly
+    instead of reclassifying from scratch. Returns None if there's no
+    pending slot (or it doesn't apply), so the caller falls through to
+    normal classification."""
+    pending_slot = _pending_slots.get(session_id)
+    if not pending_slot or looks_like_a_question(message):
+        return None
+
+    del _pending_slots[session_id]
+    if pending_slot != "shipping_address":
+        return None
+
+    parsed = parse_address_update(message)
+    if parsed:
+        current, new = parsed
+        reply = (
+            f'Got it — I\'ve recorded the change from "{current}" to "{new}". '
+            "Our shipping team will update this on your account."
+        )
+    else:
+        reply = (
+            f'Got it — I\'ve noted your new shipping details: "{message.strip()}". '
+            "Our shipping team will update this on your account."
+        )
+    return {"intent": "slot_filled_shipping_address", "confidence": 1.0, "escalated": False, "reply": reply, "sources": []}
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     session_id = req.session_id or str(uuid.uuid4())
 
     entities = extract_entities(req.message)
-    smalltalk_category = detect_smalltalk(req.message)
+    slot_result = _resolve_pending_slot(session_id, req.message)
+    smalltalk_category = None if slot_result else detect_smalltalk(req.message)
 
-    if smalltalk_category:
+    if slot_result:
+        intent, confidence, escalated, reply, sources = (
+            slot_result["intent"], slot_result["confidence"], slot_result["escalated"],
+            slot_result["reply"], slot_result["sources"],
+        )
+    elif smalltalk_category:
         intent = f"smalltalk_{smalltalk_category}"
         confidence = 1.0
         escalated = False
@@ -118,6 +161,9 @@ def chat(req: ChatRequest):
                 reply = sources[0]["answer"]
                 if entities["order_ids"]:
                     reply += f" (Reference order: {entities['order_ids'][0]})"
+
+        if intent in SLOT_PROMPTING_INTENTS and not escalated:
+            _pending_slots[session_id] = SLOT_PROMPTING_INTENTS[intent]
 
     db.log_message(session_id, "user", req.message, intent=intent, confidence=confidence, escalated=escalated)
     message_id = db.log_message(session_id, "assistant", reply, intent=intent, confidence=confidence, escalated=escalated)
