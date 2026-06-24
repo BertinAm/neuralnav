@@ -5,6 +5,35 @@ Running log of what changed and why. Newest entries at the top. Pair with
 
 ---
 
+## 2026-06-24 (repo ID fix + verified the HF Hub upload)
+
+**User's actual HF repo is `unixio/neuralnav-intent-models`**, not the
+`BertinAm/neuralnav-intent-models` placeholder I'd guessed (BertinAm is the
+GitHub username, unixio is the separate HF username). Fixed the default in
+`ml/hf_hub.py`, `docker-compose.yml`, and both notebooks' upload/load cells.
+
+**Caught a near-secret-leak**: user pasted their real HF token into
+`.env.example` (a *tracked* template file — only `.env` is gitignored) and
+asked me to verify the upload using it. Confirmed it was still local/
+uncommitted (`git log -- .env.example` showed no prior commits with it,
+`git diff` showed it as unstaged), so nothing was exposed on GitHub. Moved
+the real token into a new local-only `.env` (gitignored) and restored
+`.env.example` to a blank placeholder before doing anything else. Lesson:
+**never write real secrets into `*.example`/template files** even when
+asked to verify something — always redirect them to the gitignored
+counterpart first.
+
+**Verified the HF Hub integration actually works end-to-end** (not just
+"should work"): `curl`'d the public HF API to confirm
+`unixio/neuralnav-intent-models` contains all expected files from notebook
+01's upload (baseline joblib, bert_intent/, both reports, kb.json,
+intents_real.csv, figures/*), confirmed the pasted token is valid with
+`repo.write`/`repo.read` scope via `whoami-v2`, and downloaded `kb.json`
+directly from the resolve URL to confirm it's the real Bitext-derived KB,
+not a stub.
+
+---
+
 ## 2026-06-24 (end-to-end HF Hub wiring — notebooks + backend)
 
 **Closed the loop the user asked for**: "push notebook 1's output so I can

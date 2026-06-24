@@ -24,7 +24,7 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://neuralnav:neuralnav@postgres:5432/neuralnav
-      - HF_REPO_ID=${HF_REPO_ID:-BertinAm/neuralnav-intent-models}
+      - HF_REPO_ID=${HF_REPO_ID:-unixio/neuralnav-intent-models}
       - HF_TOKEN=${HF_TOKEN:-}
     depends_on:
       postgres:

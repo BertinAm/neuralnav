@@ -6,7 +6,7 @@ the local models/ directory (e.g. fresh clone, fresh Docker build).
 import os
 from pathlib import Path
 
-HF_REPO_ID = os.environ.get("HF_REPO_ID", "BertinAm/neuralnav-intent-models")
+HF_REPO_ID = os.environ.get("HF_REPO_ID", "unixio/neuralnav-intent-models")
 HF_TOKEN = os.environ.get("HF_TOKEN")
 
 
