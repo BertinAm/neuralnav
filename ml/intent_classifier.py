@@ -55,6 +55,7 @@ class IntentClassifier:
             return {"intent": intent, "confidence": float(proba), "backend": "baseline"}
 
         inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=32)
+        inputs.pop("token_type_ids", None)  # DistilBERT's forward() doesn't accept this
         with self.torch.no_grad():
             logits = self.model(**inputs).logits
         probs = self.torch.softmax(logits, dim=-1)[0]

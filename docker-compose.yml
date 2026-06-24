@@ -25,6 +25,11 @@ services:
       - DATABASE_URL=postgresql://neuralnav:neuralnav@postgres:5432/neuralnav
       - HF_REPO_ID=${HF_REPO_ID:-unixio/neuralnav-intent-models}
       - HF_TOKEN=${HF_TOKEN:-}
+    volumes:
+      # Models downloaded from HF Hub at startup persist here across
+      # container recreates, instead of re-downloading every restart.
+      - models_cache:/app/models
+      - hf_cache:/root/.cache/huggingface
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,3 +47,5 @@ services:
 
 volumes:
   pgdata:
+  models_cache:
+  hf_cache:
