@@ -5,6 +5,28 @@ Running log of what changed and why. Newest entries at the top. Pair with
 
 ---
 
+## 2026-06-24 (confirmed fix + added HF Hub upload)
+
+**Confirmed the undertraining fix worked.** User re-ran notebook 01 with
+the new hyperparameters: DistilBERT now reaches 98.5% macro-F1 vs the
+baseline's 87.7% — a real ~11-point gap driven by intents like
+`change_order`, `get_invoice`, `track_order` where the baseline visibly
+struggles and BERT doesn't. Loss curve shows a clean smooth convergence
+(6.5 -> ~0.1) instead of being stuck. This is now a legitimate, reportable
+ML-vs-DL data-efficiency result.
+
+**Added a Hugging Face Hub upload cell at the end of notebook 01.** Pushes
+`baseline_intent.joblib`, `bert_intent/`, both `*_report.json`, `kb.json`,
+`intents_real.csv`, and `figures/*` to a HF repo (`BertinAm/neuralnav-intent-models`
+by default — change `HF_REPO_ID` to taste) via `huggingface_hub.upload_folder`.
+Reads `HF_TOKEN` from a Kaggle secret (Add-ons -> Secrets) or env var; skips
+the upload with a printed message if no token is found, so it never breaks
+notebook runs that don't have one configured. This gives a single
+persistent place for trained artifacts instead of manually re-uploading
+Kaggle outputs as datasets between notebook runs.
+
+---
+
 ## 2026-06-24 (fixed BERT undertraining + notebook re-run robustness)
 
 **User hit two real bugs after running notebook 01 with the new low-data settings:**

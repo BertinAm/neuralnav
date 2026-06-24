@@ -24,8 +24,12 @@ change log.
   - [x] Baseline: TF-IDF + Logistic Regression
   - [x] DL: fine-tuned DistilBERT (`distilbert-base-uncased`)
   - [x] Side-by-side classification reports (per-class F1) for the report
-  - [ ] Run on Kaggle, download `baseline_intent.joblib`, `bert_intent/`,
-        `baseline_report.json`, `bert_report.json` into local `models/`
+  - [x] Run on Kaggle — fixed BERT undertraining (see memory.md), now gets
+        98.5% macro-F1 vs baseline's 87.7% on the low-data set, a real gap
+  - [x] HF Hub upload cell at the end — pushes models/reports/kb/figures to
+        a Hugging Face repo (`HF_TOKEN` via Kaggle secret or env var)
+  - [ ] Download artifacts (from Kaggle Output tab or the HF repo) into
+        local `models/`
 - [x] `notebooks/02_retrieval_and_ner.ipynb`
   - [x] sentence-transformers embeddings (`all-MiniLM-L6-v2`) + FAISS index over KB
   - [x] spaCy NER + regex entity extraction sanity check (order IDs, error codes)
