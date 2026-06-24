@@ -5,6 +5,35 @@ Running log of what changed and why. Newest entries at the top. Pair with
 
 ---
 
+## 2026-06-24 (fixed BERT undertraining + notebook re-run robustness)
+
+**User hit two real bugs after running notebook 01 with the new low-data settings:**
+
+1. `confusion_matrix(y_test, preds, ...)` crashed with a length mismatch
+   (`[135, 3]`) — caused by re-running cells out of order, leaving stale
+   `preds`/`y_test`/`y_true`/`y_pred` from a previous, different run in
+   memory. Fix: the confusion-matrix cell now recomputes `preds` (from
+   `baseline.predict(X_test)`) and `y_true`/`y_pred` (from a fresh
+   `trainer.predict(test_ds)`) itself instead of trusting variables set by
+   earlier cells, so it's correct regardless of execution order.
+
+2. **More important — BERT accuracy collapsed to 59% weighted F1, well
+   below the baseline's 88%**, with several intents at 0 precision/recall.
+   Root cause: the `TrainingArguments` (batch_size=32, 4 epochs) were tuned
+   for the original 8100-row dataset and gave only ~17 steps/epoch × 4 =
+   ~68 total steps on the new 540-row low-data training set — nowhere near
+   enough to fit a freshly-initialized 27-way classification head (training
+   loss stayed near 6, barely moving). This wasn't "DL needs less data," it
+   was an undertrained model — a misleading result if left in the report.
+   Fix: lowered `per_device_train_batch_size` to 8, raised
+   `num_train_epochs` to 30, lowered `learning_rate` to 3e-5, added
+   `warmup_ratio=0.1` and `weight_decay=0.01`. Still trains in well under a
+   minute on a T4 given the small dataset. Not yet re-validated by the user
+   on Kaggle — next run should show BERT properly fitting and likely
+   beating the baseline as intended.
+
+---
+
 ## 2026-06-24 (evaluation + visualizations added to notebook 02)
 
 **Extended the same "measure it, don't just demo it" treatment to retrieval/NER.**
