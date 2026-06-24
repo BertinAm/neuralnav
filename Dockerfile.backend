@@ -3,6 +3,14 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY requirements.txt .
+
+# Install CPU-only torch first, from PyTorch's CPU wheel index — the
+# default PyPI wheel pulls ~2GB of nvidia-cuda-* packages we'll never use
+# (Render/Railway/Fly free tiers have no GPU; inference here is CPU-only),
+# which was making builds take 1+ hour on a normal connection.
+RUN pip install --no-cache-dir --default-timeout=180 --retries 10 \
+    torch==2.4.1 --index-url https://download.pytorch.org/whl/cpu
+
 RUN pip install --no-cache-dir --default-timeout=180 --retries 10 -r requirements.txt \
     && python -m spacy download en_core_web_sm
 
