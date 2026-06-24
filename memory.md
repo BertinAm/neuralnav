@@ -139,6 +139,35 @@ Kaggle outputs as datasets between notebook runs.
 
 ---
 
+## 2026-06-24 (fixed intent-mismatch and retrieval-blind-spot from the same transcript)
+
+**Two more issues from the same pasted conversation, fixed together since
+they share a root cause.**
+
+1. "I was charged twice for my order" was classified `check_payment_methods`
+   (78%) but retrieval surfaced refund-policy content that happened to
+   mention duplicate charges — right-ish answer, wrong/misleading intent
+   label shown to the user.
+2. The repeated address-question turn had a top retrieval score of only
+   0.43-0.46 (notebook 02's score-distribution chart shows correct matches
+   cluster ~0.6-0.85), yet the bot answered with full confidence — escalation
+   only ever checked classifier confidence, never retrieval quality.
+
+**Fix, in `backend/main.py`**: added `RETRIEVAL_SCORE_THRESHOLD = 0.5` —
+escalation now triggers if *either* classifier confidence OR top retrieval
+score is weak (logical OR, not requiring both to agree). Separately, the
+intent shown to the user is now `sources[0]["intent"]` (whichever KB entry
+actually produced the reply) rather than the raw classifier guess — added a
+distinct `classified_intent` field that's still logged to Postgres
+unchanged (so dashboard analytics like "lowest-confidence intents" keep
+reflecting real classifier performance), and only surfaced in the frontend
+as a small note when it disagrees with the effective intent. Verified:
+the exact "charged twice" query now escalates instead of answering
+confidently with a mismatched label; a query where both signals agree
+(`place_order`) is unaffected.
+
+---
+
 ## 2026-06-24 (fixed repeated-question bug found in live testing)
 
 **User pasted a real conversation transcript that exposed a genuine UX

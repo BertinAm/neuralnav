@@ -193,6 +193,14 @@ def render_meta(meta: dict):
         f'<div class="nn-meta-row">{intent_chip}{confidence_chip(meta["confidence"])}</div>',
         unsafe_allow_html=True,
     )
+    classified = meta.get("classified_intent")
+    if classified and classified != meta["intent"]:
+        st.markdown(
+            f'<p class="nn-note">The classifier guessed "{classified}", but the best-matching '
+            f'knowledge base entry was actually "{meta["intent"]}" — the reply follows the '
+            f'KB match since that\'s what it\'s based on.</p>',
+            unsafe_allow_html=True,
+        )
     if meta.get("escalated"):
         st.markdown(
             f'<p class="nn-note">Confidence was below {int(CONFIDENCE_THRESHOLD * 100)}%, '
@@ -270,6 +278,7 @@ if prompt := st.chat_input("Describe your issue..."):
 
             meta = {
                 "intent": data["intent"],
+                "classified_intent": data.get("classified_intent"),
                 "confidence": data["confidence"],
                 "escalated": data["escalated"],
                 "sources": data["sources"],

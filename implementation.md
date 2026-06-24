@@ -62,6 +62,15 @@ change log.
 - [x] `GET /history/{session_id}` — replay a session's messages
 - [x] `GET /stats` — aggregates for the admin dashboard (intent distribution,
       escalation rate, confidence list, feedback counts)
+- [x] Escalation now checks retrieval match score too (`RETRIEVAL_SCORE_THRESHOLD`,
+      not just classifier confidence) — a confidently-wrong classification
+      paired with a weak KB match used to still answer with no uncertainty
+      signal; now either weak signal triggers a human handoff
+- [x] Displayed intent now reflects the KB entry that actually generated the
+      reply (`sources[0]["intent"]`), not just the raw classifier guess —
+      `classified_intent` is kept separately (logged to Postgres for
+      accurate model-performance analytics, shown in the UI as a note only
+      when it disagrees with the effective intent)
 - [ ] Swap the lightweight escalation/greeting logic for RASA dialogue
       management if the course wants a trainable dialogue policy (see §6)
 - [x] `ml/slot_filling.py` — narrow slot-filling for the one most visible
