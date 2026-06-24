@@ -14,6 +14,44 @@ from avatars import ASSISTANT_AVATAR, USER_AVATAR
 BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
 CONFIDENCE_THRESHOLD = 0.45  # mirrors backend/main.py — shown in the UI so escalations make sense
 
+# Mirrors the 27 intents the classifier was actually trained on (Bitext
+# Customer Support dataset) — questions outside these topics will get a
+# low-confidence guess and likely escalate, which is expected, not a bug.
+EXAMPLE_QUESTIONS = {
+    "Orders": [
+        "I want to cancel my order",
+        "Can you change the item in my order?",
+        "Where is my order right now?",
+        "I'd like to place a new order",
+    ],
+    "Refunds & cancellations": [
+        "What's your refund policy?",
+        "When will I get my refund?",
+        "How much is the cancellation fee?",
+    ],
+    "Account": [
+        "How do I create a new account?",
+        "I forgot my password",
+        "Please delete my account",
+        "I'm having trouble registering",
+    ],
+    "Shipping & delivery": [
+        "Can you update my shipping address?",
+        "How long does delivery take?",
+        "What delivery options do you have?",
+    ],
+    "Billing": [
+        "Can you send me my invoice?",
+        "What payment methods do you accept?",
+        "I was charged twice for my order",
+    ],
+    "Support": [
+        "I want to talk to a human agent",
+        "I have a complaint about my order",
+        "How do I contact customer service?",
+    ],
+}
+
 st.set_page_config(page_title="NeuralNav Support", page_icon="◆", layout="centered")
 
 CSS = """
@@ -106,6 +144,18 @@ with st.sidebar:
         st.rerun()
 
     st.caption(f"Session: `{st.session_state.session_id or 'not started'}`")
+    st.divider()
+
+    with st.expander("💬 What can I ask?", expanded=False):
+        st.caption(
+            "The assistant is trained on e-commerce/account support topics. "
+            "Try things like:"
+        )
+        for category, examples in EXAMPLE_QUESTIONS.items():
+            st.markdown(f"**{category}**")
+            for ex in examples:
+                st.caption(f"· {ex}")
+
     st.divider()
     st.caption("**How this works**")
     st.caption(
