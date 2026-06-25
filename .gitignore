@@ -26,3 +26,11 @@ models/*
 Thumbs.db
 .vscode/
 .idea/
+
+# Report/portfolio deliverables — generated locally, not part of the app
+PORTFOLIO.md
+report_assets/
+build_report/
+reports/
+*.docx
+*.pptx
