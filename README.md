@@ -141,6 +141,16 @@ Free tier note: the service sleeps after 15 min idle and takes ~30-60s to
 wake on the next request — expected, not a bug, if a professor's first
 request is slow.
 
+**Memory note**: Render's free web service plan caps memory at 512MB. The
+full pipeline (DistilBERT + sentence-transformers + spaCy) gets OOM-killed
+at that limit, so `ml/resource_mode.py` auto-detects Render (it sets
+`RENDER=true` automatically) and switches to a TF-IDF-only pipeline that
+fits in ~130MB. This means the live Render demo runs the classical-ML
+baseline, not the fine-tuned BERT model — your report's actual BERT vs.
+baseline comparison numbers come from the notebooks/local Docker run, not
+from what's live on Render. No action needed; this is automatic and
+documented in `memory.md`.
+
 ### Deploying: Streamlit Community Cloud (frontend)
 
 1. Go to [share.streamlit.io](https://share.streamlit.io), sign in with

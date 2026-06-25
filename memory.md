@@ -139,6 +139,58 @@ Kaggle outputs as datasets between notebook runs.
 
 ---
 
+## 2026-06-25 (Render OOM — added a lightweight pipeline fallback)
+
+**Render backend deployment failed**: logs showed `Out of memory (used over
+512Mi)` right after model loading completed — Render's free web service tier
+caps RAM at 512MB, and the full pipeline (torch + DistilBERT + sentence-
+transformers/MiniLM + spaCy en_core_web_sm all loaded simultaneously)
+exceeds that comfortably. Not a code bug, a genuine resource constraint of
+free hosting.
+
+**Fix**: added `ml/resource_mode.py` — auto-detects Render via the
+`RENDER=true` env var it sets automatically (no manual config needed) and
+flips `LIGHTWEIGHT_MODE`, which:
+- `ml/intent_classifier.py`: skips BERT entirely, uses only the TF-IDF
+  baseline (never imports torch/transformers)
+- `ml/retrieval.py`: uses TF-IDF + cosine similarity (scikit-learn only)
+  instead of sentence-transformers + FAISS
+- `ml/ner.py`: regex-only, skips loading spaCy's model
+
+**Verified locally** by running the built image standalone with
+`-e LIGHTWEIGHT_MODE=true -m 512m` (Docker's own memory cap, mimicking
+Render exactly): settled at **~130MB**, comfortably under the limit, and a
+real `/chat` request worked end-to-end.
+
+**Follow-up calibration bug caught during that same test**: the TF-IDF
+baseline's `predict_proba` is far less peaked than BERT's softmax across 27
+classes — measured correct predictions cluster confidence ~0.10-0.30, while
+garbage/off-topic input clusters ~0.04-0.07. The existing
+`CONFIDENCE_THRESHOLD = 0.45` (tuned for BERT) would have escalated nearly
+every baseline prediction regardless of correctness, making the live Render
+demo constantly say "connecting you to a human." Added
+`CONFIDENCE_THRESHOLD_BASELINE = 0.08` and `RETRIEVAL_SCORE_THRESHOLD_TFIDF
+= 0.15` (TF-IDF cosine similarity also scores much lower than embedding
+similarity for equally good matches), selected at runtime based on which
+backend actually loaded (`_classifier.backend` / `_retriever.backend`).
+
+**Frontend updated to match**: the sidebar's "How this works" copy and the
+escalation note previously stated a hardcoded "45%" cutoff, which is wrong
+half the time now that the threshold varies per backend. Reworded to not
+cite a specific number, and the confidence chip's color now follows the
+backend's own `escalated` boolean instead of an absolute threshold
+comparison, since absolute confidence values aren't comparable across the
+two backends.
+
+**Known consequence, documented in README**: the live Render deployment
+runs the classical TF-IDF baseline, not the fine-tuned DistilBERT model —
+the report's actual baseline-vs-BERT comparison numbers come from the
+notebooks/local Docker run, not from what's publicly live. This is a
+legitimate, explainable tradeoff (free hosting vs. model size), not a
+limitation to hide.
+
+---
+
 ## 2026-06-24 (fixed intent-mismatch and retrieval-blind-spot from the same transcript)
 
 **Two more issues from the same pasted conversation, fixed together since

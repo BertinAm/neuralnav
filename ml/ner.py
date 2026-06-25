@@ -1,11 +1,15 @@
 """Entity extraction: order IDs and error codes via regex (deterministic,
 high precision for structured tokens), product/date entities via spaCy's
 statistical NER (handles free-text variation regex can't).
+
+spaCy's model is skipped under ml/resource_mode.LIGHTWEIGHT_MODE (e.g.
+Render's 512MB free tier) — regex-only extraction still works, just without
+the free-text entity types spaCy would catch.
 """
 import re
 from typing import TypedDict
 
-import spacy
+from ml.resource_mode import LIGHTWEIGHT_MODE
 
 _nlp = None
 
@@ -22,6 +26,8 @@ class Entities(TypedDict):
 def _get_nlp():
     global _nlp
     if _nlp is None:
+        import spacy
+
         try:
             _nlp = spacy.load("en_core_web_sm")
         except OSError as e:
@@ -35,10 +41,10 @@ def extract_entities(text: str) -> Entities:
     order_ids = [m.group(1) for m in ORDER_ID_RE.finditer(text)]
     error_codes = ERROR_CODE_RE.findall(text)
 
-    doc = _get_nlp()(text)
-    spacy_entities = [
-        {"text": ent.text, "label": ent.label_} for ent in doc.ents
-    ]
+    spacy_entities = []
+    if not LIGHTWEIGHT_MODE:
+        doc = _get_nlp()(text)
+        spacy_entities = [{"text": ent.text, "label": ent.label_} for ent in doc.ents]
 
     return {
         "order_ids": order_ids,

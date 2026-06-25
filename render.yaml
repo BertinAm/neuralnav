@@ -2,6 +2,12 @@
 # point at this repo. Creates the backend web service and a managed
 # Postgres database together. HF_TOKEN must be set manually in the Render
 # dashboard after the first deploy (kept out of this file and out of git).
+#
+# The free web service plan caps memory at 512MB, which OOM-kills the full
+# DistilBERT + sentence-transformers + spaCy pipeline. ml/resource_mode.py
+# auto-detects Render (it sets RENDER=true on its containers automatically)
+# and switches to a TF-IDF-only pipeline that fits comfortably (~130MB
+# measured). No env var needs to be set here for this — it's automatic.
 databases:
   - name: neuralnav-db
     plan: free

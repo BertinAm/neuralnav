@@ -28,6 +28,11 @@ from ml.slot_filling import SLOT_PROMPTING_INTENTS, looks_like_a_question, parse
 from ml.smalltalk import RESPONSES, detect as detect_smalltalk
 
 CONFIDENCE_THRESHOLD = 0.45
+# The TF-IDF baseline's predict_proba is far less peaked than BERT's softmax
+# across 27 classes — measured correct predictions cluster ~0.10-0.30, while
+# garbage/off-topic queries cluster ~0.04-0.07. 0.45 (tuned for BERT) would
+# escalate almost every baseline prediction regardless of correctness.
+CONFIDENCE_THRESHOLD_BASELINE = 0.08
 # Retrieval match scores cluster ~0.6-0.85 for genuinely correct matches and
 # lower (with overlap) for incorrect ones, per notebooks/02's score
 # distribution chart — 0.5 is a heuristic cutoff, not a tuned threshold.
@@ -35,6 +40,11 @@ CONFIDENCE_THRESHOLD = 0.45
 # conservative than checking classifier confidence alone, which previously
 # let weak KB matches answer confidently with no uncertainty signal at all.
 RETRIEVAL_SCORE_THRESHOLD = 0.5
+# TF-IDF cosine similarity (the lightweight-mode retrieval backend, see
+# ml/retrieval.py) scores much lower than embedding similarity for equally
+# good matches — sparse exact-word-overlap vectors vs. dense semantic ones —
+# so the embedding threshold above would escalate almost everything.
+RETRIEVAL_SCORE_THRESHOLD_TFIDF = 0.15
 ESCALATE_INTENTS = {"escalate_human"}
 HISTORY_CONTEXT_TURNS = 2
 
@@ -167,10 +177,16 @@ def chat(req: ChatRequest):
         else:
             sources = _retriever.search(req.message, top_k=3)
             top_score = sources[0]["score"] if sources else 0.0
+            retrieval_threshold = (
+                RETRIEVAL_SCORE_THRESHOLD_TFIDF if _retriever.backend == "tfidf" else RETRIEVAL_SCORE_THRESHOLD
+            )
+            confidence_threshold = (
+                CONFIDENCE_THRESHOLD_BASELINE if _classifier.backend == "baseline" else CONFIDENCE_THRESHOLD
+            )
 
             if not sources:
                 reply = "I'm not sure yet — could you rephrase, or would you like a human agent?"
-            elif confidence < CONFIDENCE_THRESHOLD or top_score < RETRIEVAL_SCORE_THRESHOLD:
+            elif confidence < confidence_threshold or top_score < retrieval_threshold:
                 # Either signal being weak is reason enough to hand off — a
                 # confident-but-irrelevant retrieval match is just as risky
                 # as a confident-but-wrong classification.

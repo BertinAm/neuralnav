@@ -12,7 +12,6 @@ import streamlit as st
 from avatars import ASSISTANT_AVATAR, USER_AVATAR
 
 BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
-CONFIDENCE_THRESHOLD = 0.45  # mirrors backend/main.py — shown in the UI so escalations make sense
 
 # Mirrors the 27 intents the classifier was actually trained on (Bitext
 # Customer Support dataset) — questions outside these topics will get a
@@ -160,10 +159,14 @@ with st.sidebar:
     st.caption("**How this works**")
     st.caption(
         "Each message is classified into an intent (TF-IDF baseline or "
-        "fine-tuned DistilBERT), checked for entities (order IDs, error "
-        "codes), then either answered via semantic retrieval over the "
-        f"knowledge base or escalated if confidence drops below "
-        f"{int(CONFIDENCE_THRESHOLD * 100)}%."
+        "fine-tuned DistilBERT, whichever is active on this backend), "
+        "checked for entities (order IDs, error codes), then either "
+        "answered via semantic retrieval over the knowledge base or "
+        "escalated to a human agent if either the classifier or the "
+        "retrieval match is too weak to trust. (The exact confidence "
+        "cutoff differs between the BERT and TF-IDF backends — TF-IDF's "
+        "probabilities run much lower even when correct — so it's not a "
+        "single fixed number across deployments.)"
     )
     st.divider()
     st.caption("Backend: " + BACKEND_URL)
@@ -174,14 +177,19 @@ with st.sidebar:
         st.caption("🔴 Backend unreachable")
 
 
-def confidence_chip(confidence: float) -> str:
+def confidence_chip(confidence: float, escalated: bool) -> str:
+    # Color reflects the backend's own escalation decision (already
+    # threshold-aware per backend — see backend/main.py) rather than a
+    # fixed absolute cutoff, since the TF-IDF baseline's probabilities run
+    # much lower than BERT's even when correct, making any single number
+    # not comparable across backends.
     pct = round(confidence * 100)
-    if confidence >= 0.7:
-        cls = "nn-chip-conf-high"
-    elif confidence >= CONFIDENCE_THRESHOLD:
-        cls = "nn-chip-conf-med"
-    else:
+    if escalated:
         cls = "nn-chip-conf-low"
+    elif confidence >= 0.7:
+        cls = "nn-chip-conf-high"
+    else:
+        cls = "nn-chip-conf-med"
     return f'<span class="nn-chip {cls}">confidence {pct}%</span>'
 
 
@@ -190,7 +198,7 @@ def render_meta(meta: dict):
         return
     intent_chip = f'<span class="nn-chip">intent: {meta["intent"]}</span>'
     st.markdown(
-        f'<div class="nn-meta-row">{intent_chip}{confidence_chip(meta["confidence"])}</div>',
+        f'<div class="nn-meta-row">{intent_chip}{confidence_chip(meta["confidence"], meta["escalated"])}</div>',
         unsafe_allow_html=True,
     )
     classified = meta.get("classified_intent")
@@ -203,8 +211,8 @@ def render_meta(meta: dict):
         )
     if meta.get("escalated"):
         st.markdown(
-            f'<p class="nn-note">Confidence was below {int(CONFIDENCE_THRESHOLD * 100)}%, '
-            f'so this was routed to a human agent instead of an automated answer.</p>',
+            '<p class="nn-note">Either the classifier or the knowledge-base match was too '
+            'weak to trust, so this was routed to a human agent instead of an automated answer.</p>',
             unsafe_allow_html=True,
         )
     if meta.get("sources"):

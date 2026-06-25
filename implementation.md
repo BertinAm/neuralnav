@@ -71,6 +71,14 @@ change log.
       `classified_intent` is kept separately (logged to Postgres for
       accurate model-performance analytics, shown in the UI as a note only
       when it disagrees with the effective intent)
+- [x] `ml/resource_mode.py` — auto-detects Render's free tier (512MB RAM
+      cap) and switches to a TF-IDF-only pipeline (classifier + retrieval,
+      regex-only NER, no torch/transformers/sentence-transformers/spaCy)
+      that fits in ~130MB measured, vs. OOM-killing the full DL stack.
+      Confidence/retrieval-score thresholds are separately calibrated for
+      this backend since TF-IDF's probabilities run much lower than BERT's
+      even when correct (measured: correct ~0.10-0.30 vs ~0.04-0.07 for
+      garbage input).
 - [ ] Swap the lightweight escalation/greeting logic for RASA dialogue
       management if the course wants a trainable dialogue policy (see §6)
 - [x] `ml/slot_filling.py` — narrow slot-filling for the one most visible

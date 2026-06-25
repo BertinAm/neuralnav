@@ -12,6 +12,7 @@ from pathlib import Path
 import joblib
 
 from ml.hf_hub import ensure_dir, ensure_file
+from ml.resource_mode import LIGHTWEIGHT_MODE
 
 ROOT = Path(__file__).resolve().parent.parent
 BASELINE_PATH = ROOT / "models" / "baseline_intent.joblib"
@@ -21,7 +22,7 @@ BERT_DIR = ROOT / "models" / "bert_intent"
 class IntentClassifier:
     def __init__(self):
         self.backend = None
-        if ensure_dir(BERT_DIR, "bert_intent"):
+        if not LIGHTWEIGHT_MODE and ensure_dir(BERT_DIR, "bert_intent"):
             self._load_bert()
         elif ensure_file(BASELINE_PATH, "baseline_intent.joblib"):
             self._load_baseline()
